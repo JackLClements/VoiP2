@@ -50,7 +50,7 @@ public class AudioSender implements Runnable {
 		//IP ADDRESS to send to
 		InetAddress clientIP = null;
 		try {
-			clientIP = InetAddress.getByName("CMPLAB5-03");  //CHANGE localhost to IP or NAME of client machine
+			clientIP = InetAddress.getByName("localhost");  //CHANGE localhost to IP or NAME of client machine
 		} catch (UnknownHostException e) {
 			System.out.println("ERROR: Audio Sender: Could not find client IP");
 			e.printStackTrace();

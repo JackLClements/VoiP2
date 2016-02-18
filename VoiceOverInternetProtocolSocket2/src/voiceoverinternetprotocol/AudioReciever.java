@@ -56,28 +56,42 @@ public class AudioReciever implements Runnable {
 		//Main loop.
 		boolean running = true;
 		int burst = 0;
+		DatagramPacket[] packets = new DatagramPacket[16];
+		DatagramPacket[] orderedPackets = new DatagramPacket[16];
 		while (running) {
 			try {
-				byte[] recieve = new byte[513];
-				DatagramPacket packet = new DatagramPacket(recieve, 0, 513);
-
-				//Add data to packet
-				receiving_socket.receive(packet);
-
-				//Unshuffle packet
-				byte header = recieve[0];
-				byte[] payload = new byte[512];
-				for (int i = 1; i < recieve.length; i++) {
-					payload[i - 1] = recieve[i];
-				}
-
 				if (burst < 16) {
+					byte[] recieve = new byte[513];
+					DatagramPacket packet = new DatagramPacket(recieve, 0, 513);
+					
+					//Add data to packet
+					receiving_socket.receive(packet);
+					
+					//Unshuffle packet
+					byte header = recieve[0];
+					byte[] payload = new byte[512];
+					for (int i = 1; i < recieve.length; i++) {
+						payload[i - 1] = recieve[i];
+					}
+					DatagramPacket packet2 = new DatagramPacket(payload, payload.length);
+					System.out.println("HEADER No. " + header);
+					orderedPackets[header] = packet2;
 					burst++;
 				} else {
-					//play audio
+					for(int i = 0; i < 16; i++){
+						if(orderedPackets[i] == null){
+							//System.out.println("PACKET No. " + i);
+						}
+						else{
+							//System.out.println("PACKET No. " + i);
+							player.playBlock(orderedPackets[i].getData());
+						}
+					}
+					System.out.println("PACKET RESET");
+					burst = 0;
 				}
 
-				player.playBlock(recieve);
+				//player.playBlock(recieve);
 
 			} catch (IOException e) {
 				System.out.println("ERROR: Audio Receiver: Some random IO error occured!");
