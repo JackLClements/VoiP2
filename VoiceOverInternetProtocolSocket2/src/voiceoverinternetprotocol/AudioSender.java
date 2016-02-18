@@ -30,13 +30,13 @@ public class AudioSender implements Runnable {
 	Vector<byte[]> voiceVector;
 	AudioRecorder recorder;
 	//AudioPlayer player;
-	
-	public AudioSender() throws LineUnavailableException{
+
+	public AudioSender() throws LineUnavailableException {
 		recorder = new AudioRecorder();
 		voiceVector = new Vector<byte[]>();
 		//player = new AudioPlayer();
 	}
-	
+
 	public void start() {
 		Thread thread = new Thread(this);
 		thread.start();
@@ -44,7 +44,7 @@ public class AudioSender implements Runnable {
 
 	public void run() {
 
-        //***************************************************
+		//***************************************************
 		//Port to send to
 		int PORT = 8000;
 		//IP ADDRESS to send to
@@ -58,7 +58,7 @@ public class AudioSender implements Runnable {
 		}
         //***************************************************
 
-        //***************************************************
+		//***************************************************
 		//Open a socket to send from
 		//We dont need to know its port number as we never send anything to it.
 		//We need the try and catch block to make sure no errors occur.
@@ -72,28 +72,70 @@ public class AudioSender implements Runnable {
 		}
         //***************************************************
 
-        //***************************************************
+		//***************************************************
 		//Get a handle to the Standard Input (console) so we can read user input
 		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         //***************************************************
 
-        //***************************************************
+		//***************************************************
 		//Main loop.
 		boolean running = true;
-
+		int i = 0;
+		DatagramPacket[] packets = new DatagramPacket[16];
 		while (running) {
 			try {
+				//PAYLOAD CREATION
 				//Read in data and add to vector for potential re-transmission
-				byte[] block = recorder.getBlock();
-				voiceVector.add(block);
+				byte[] payload = recorder.getBlock();
+				voiceVector.add(payload);
+				
+				//HEADER CREATION
+				byte header = (byte) i;
+
+				//PACKET CREATION
+				byte[] packetData = new byte[1 + payload.length];
+				packetData[0] = header;
+				for(int r = 1; r < packetData.length; r++){
+					packetData[r] = payload[r-1];
+				}
+				
 				//Make a DatagramPacket from it, with client address and port number
-				DatagramPacket packet = new DatagramPacket(block, block.length, clientIP, PORT);
+				DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientIP, PORT);
 				
-				//Test Record Playback
-				//player.playBlock(block);
-				
-				//Send it
-				sending_socket.send(packet);
+				DatagramPacket[] packets2 = new DatagramPacket[16]; //reordered packets
+				if (i < 16) {
+					packets[i] = packet;
+					i++;
+				}
+				else {
+					//Send it
+					int d = 4;
+					int r0 = 0;
+					int r1 = 12;
+					int r2 = 8;
+					int r3 = 4;
+					for (int j = 0; j < 16; j++) {
+						int h = j + 1;
+						if (h % d == 0) {
+							packets2[r0] = packets[j];
+							r0++;
+						} else if (h % d == 1) {
+							packets2[r1] = packets[j];
+							r1++;
+						} else if (h % d == 2) {
+							packets2[r2] = packets[j];
+							r2++;
+						} else if (h % d == 3) {
+							packets2[r3] = packets[j];
+							r3++;
+						}
+					}
+					for (int b = 0; b < 16; b++) {
+						sending_socket.send(packets2[b]);
+					}
+					i = 0;
+				}
+
 			} catch (IOException e) {
 				System.out.println("ERROR: Audio Sender: Some random IO error occured!");
 				e.printStackTrace();

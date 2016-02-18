@@ -11,6 +11,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.SocketException;
 import java.util.Iterator;
+import java.util.Vector;
 import javax.sound.sampled.LineUnavailableException;
 import uk.ac.uea.cmp.voip.DatagramSocket2;
 
@@ -54,25 +55,30 @@ public class AudioReciever implements Runnable {
 		//***************************************************
 		//Main loop.
 		boolean running = true;
-
+		int burst = 0;
 		while (running) {
-
 			try {
-				//Receive a DatagramPacket (note that the string cant be more than 80 chars)
-				byte[] buffer = new byte[512];
-				DatagramPacket packet = new DatagramPacket(buffer, 0, 512);
+				byte[] recieve = new byte[513];
+				DatagramPacket packet = new DatagramPacket(recieve, 0, 513);
 
+				//Add data to packet
 				receiving_socket.receive(packet);
-				
-				//Get a string from the byte buffer
-				player.playBlock(buffer);
-				//String str = new String(buffer);
-				
-				//Display it
-				//Iterator<byte[]> voiceItr = voiceVector.iterator();
-				//while (voiceItr.hasNext()) {
-				//	player.playBlock(voiceItr.next());
-				//}
+
+				//Unshuffle packet
+				byte header = recieve[0];
+				byte[] payload = new byte[512];
+				for (int i = 1; i < recieve.length; i++) {
+					payload[i - 1] = recieve[i];
+				}
+
+				if (burst < 16) {
+					burst++;
+				} else {
+					//play audio
+				}
+
+				player.playBlock(recieve);
+
 			} catch (IOException e) {
 				System.out.println("ERROR: Audio Receiver: Some random IO error occured!");
 				e.printStackTrace();
