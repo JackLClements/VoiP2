@@ -56,11 +56,10 @@ public class AudioReciever implements Runnable {
 		//Main loop.
 		boolean running = true;
 		int burst = 0;
-		DatagramPacket[] packets = new DatagramPacket[16];
-		DatagramPacket[] orderedPackets = new DatagramPacket[16];
+		DatagramPacket[] orderedPackets = new DatagramPacket[256];
 		while (running) {
 			try {
-				if (burst < 16) {
+				if (burst < 16) { //wrong, as this means 16 packets reciveved, does not compensate for packet loss
 					byte[] recieve = new byte[513];
 					DatagramPacket packet = new DatagramPacket(recieve, 0, 513);
 					
@@ -74,11 +73,11 @@ public class AudioReciever implements Runnable {
 						payload[i - 1] = recieve[i];
 					}
 					DatagramPacket packet2 = new DatagramPacket(payload, payload.length);
-					System.out.println("HEADER No. " + header);
+					System.out.println(header);
 					orderedPackets[header] = packet2;
 					burst++;
 				} else {
-					for(int i = 0; i < 16; i++){
+					for(int i = 0; i < 256 ; i++){ //265 IS WRONG, I NEEDS TO START AT THE PREVIOUS ENDPOINT, STORE THIS
 						if(orderedPackets[i] == null){
 							//System.out.println("PACKET No. " + i);
 						}
@@ -87,7 +86,6 @@ public class AudioReciever implements Runnable {
 							player.playBlock(orderedPackets[i].getData());
 						}
 					}
-					System.out.println("PACKET RESET");
 					burst = 0;
 				}
 

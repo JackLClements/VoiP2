@@ -80,34 +80,35 @@ public class AudioSender implements Runnable {
 		//***************************************************
 		//Main loop.
 		boolean running = true;
-		int i = 0;
+		int burst = 0;
+		byte header = 0;
 		DatagramPacket[] packets = new DatagramPacket[16];
+		DatagramPacket[] packets2 = new DatagramPacket[16]; //reordered packets
 		while (running) {
 			try {
-				//PAYLOAD CREATION
-				//Read in data and add to vector for potential re-transmission
-				byte[] payload = recorder.getBlock();
-				voiceVector.add(payload);
-				
-				//HEADER CREATION
-				byte header = (byte) i;
+				if (burst < 16) {
+					//PAYLOAD CREATION
+					//Read in data and add to vector for potential re-transmission
+					byte[] payload = recorder.getBlock();
+					voiceVector.add(payload);
+		
 
-				//PACKET CREATION
-				byte[] packetData = new byte[1 + payload.length];
-				packetData[0] = header;
-				for(int r = 1; r < packetData.length; r++){
-					packetData[r] = payload[r-1];
-				}
-				
-				//Make a DatagramPacket from it, with client address and port number
-				DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientIP, PORT);
-				
-				DatagramPacket[] packets2 = new DatagramPacket[16]; //reordered packets
-				if (i < 16) {
-					packets[i] = packet;
-					i++;
-				}
-				else {
+					//PACKET CREATION
+					byte[] packetData = new byte[1 + payload.length];
+					//HEADER CREATION
+					packetData[0] = header;
+					header++;
+					for (int r = 1; r < packetData.length; r++) {
+						packetData[r] = payload[r - 1];
+					}
+
+					//Make a DatagramPacket from it, with client address and port number
+					DatagramPacket packet = new DatagramPacket(packetData, packetData.length, clientIP, PORT);
+					
+					//add to packet array
+					packets[burst] = packet;
+					burst++;
+				} else {
 					//Send it
 					int d = 4;
 					int r0 = 0;
@@ -133,7 +134,7 @@ public class AudioSender implements Runnable {
 					for (int b = 0; b < 16; b++) {
 						sending_socket.send(packets2[b]);
 					}
-					i = 0;
+					burst = 0;
 				}
 
 			} catch (IOException e) {
