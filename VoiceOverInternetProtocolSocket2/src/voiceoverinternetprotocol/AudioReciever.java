@@ -15,6 +15,7 @@ import java.util.Iterator;
 import java.util.Vector;
 import javax.sound.sampled.LineUnavailableException;
 import uk.ac.uea.cmp.voip.DatagramSocket2;
+import uk.ac.uea.cmp.voip.DatagramSocket3;
 
 /**
  *
@@ -63,7 +64,6 @@ public class AudioReciever implements Runnable {
         //int lastWorkingPacket = 0;
         while (running) {
             try {
-                if (burst < 16) {
                     byte[] recieve = new byte[513];
                     DatagramPacket packet = new DatagramPacket(recieve, 0, 513);
                     //Add data to packet
@@ -86,6 +86,7 @@ public class AudioReciever implements Runnable {
                     } else {
                         orderedHeader = correctHeader;
                     }
+                    System.out.println(orderedHeader);
                     orderedPackets[orderedHeader] = packet2;
                     burst++;
                     if (burst >= 16) {
@@ -101,7 +102,6 @@ public class AudioReciever implements Runnable {
                             }
                         }
                         burst = 0;
-                        System.out.println(x);
                         if (x < 15) {
                             x++;
                         } else {
@@ -109,7 +109,7 @@ public class AudioReciever implements Runnable {
                         }
                         //Arrays.fill(orderedPackets, null);
                     }
-                }
+                
 
                 //if (burst < 16) { //wrong, as this means 16 packets reciveved, does not compensate for packet loss
 				/*} else {
